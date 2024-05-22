@@ -21,38 +21,8 @@ import Review from './components/layout/pages/Reviewpage'
 import OrderConfirmation from './components/layout/pages/OrderConfirmationpage'
 import OrderTracking from './components/layout/pages/OrderTrackingpage' 
 
-import firebase from './firebase'
-
 class App extends Component {
   
-  // constructor(props){
-  //   super(props)
-  //   this.state={}
-  // }
-
-  // componentDidMount(){
-  //   const msg = firebase.messaging();
-  //   msg.requestPermission().then(()=>{
-  //     return msg.getToken();
-  //   }).then(token=>{
-  //     console.log('Token : ',token);
-  //   }).catch(()=>{
-  //     console.log('error');
-  //   });
-
-  //   msg.onMessage(function(payload) {
-  //     alert(payload.notification.body)
-  //     console.log(payload)
-  //     // let options = {
-  //     //   body: payload.data.body,
-  //     //   icon: payload.data.icon
-  //     // }
-    
-  //     // return registration.showNotification(payload.data.title, options);
-  //   });
-  // }
-
-
   render(){
     return (
       <Provider store={store}>

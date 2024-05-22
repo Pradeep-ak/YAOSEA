@@ -1,0 +1,20 @@
+{
+    "menu":[{
+        "name":"Fruits",
+        "id":"cat100240030",
+        "seoname":"fruits"
+    },{
+        "name":"Vegetables",
+        "id":"cat100240031",
+        "seoname":"vegetables"
+    },{
+        "name":"Herbs",
+        "id":"cat100240032",
+        "seoname":"herbs"
+    },{
+        "name":"Dairy",
+        "id":"cat100240033",
+        "seoname":"dairy"
+    }
+    ]
+}

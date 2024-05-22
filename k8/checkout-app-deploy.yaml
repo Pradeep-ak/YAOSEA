@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: ecom
+  name: ecom-checkout
+  labels:
+    app: ecom-checkout
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: checkoutpod
+  template:
+    metadata:
+      labels:
+        app: checkoutpod
+    spec:
+      containers:
+        - name: checkoutcontainer
+          image: checkoutserver-server-app:1.0
+          ports:
+            - containerPort: 8000
+          # env:
+          #   - name: SOLR_SERVICE_HOST
+          #     value: solr
+          #   - name: MONGO_SERVICE_HOST
+          #     value: mongo
+          imagePullPolicy: Never
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: ecom
+  name: checkoutserver
+spec:
+  ports:
+  - port: 8000
+    targetPort: 8000
+  selector:
+    app: checkoutpod
+

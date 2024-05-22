@@ -1,0 +1,10 @@
+[
+    {
+        "host":["localhost"],
+        "StoreNumber": "0001"
+    },
+    {
+        "host":["newronstore.in"],
+        "StoreNumber": "2"
+    }
+]

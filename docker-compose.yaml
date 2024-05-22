@@ -1,0 +1,314 @@
+version: "3.5"
+
+services:
+  mongo:
+    image: mongo:4.2
+    labels:
+      NAME: "mongo"
+    hostname: "ls-mongo"
+    # container_name: "ls-mongo"
+    # ports:
+    #   - "27017:27017"
+    networks:
+      - ecom-net
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=example
+    volumes: 
+      - ./data/mongoData:/data/db
+      - ./cronscripts/mongodb_init/init-mongo.sh:/docker-entrypoint-initdb.d/init-mongo.sh:ro
+  
+  solr:
+    image: solr:8.6-slim
+    labels:
+      NAME: "solr"
+    hostname: "ls-solr"
+    # container_name: "ls-solr"
+    ports:
+     - "9982:9983"
+     - "8982:8983"
+    networks:
+      - ecom-net
+    # volumes:
+    #   - ./data/solr/data/:/var/solr/data/
+    #   - ./data/solr/configsets/:/opt/solr/server/solr/configsets/
+    entrypoint:
+    - bash
+    - "-c"
+    - "precreate-core product; exec solr -f"
+      # - docker-entrypoint.sh
+      # - solr
+      # - start
+      # - -c
+      # - -f
+      
+  web-app:
+    build: server/.
+    #working_dir: /
+    labels:
+      NAME: "node"
+    hostname: "ls-node"
+    # container_name: "ls-node"
+    image: ls-node-server-app:1.0
+    entrypoint: /wait-for-it.sh ls-mongo:27017 -t 120 -- /wait-for-it.sh ls-solr:8983 -t 120 --
+    command: npm run server
+    # ports:
+    #   - "5000:5000"
+    networks:
+      - ecom-net
+    volumes: 
+      - ./server/src:/usr/src/app/src
+    environment:
+      - SOLR_SERVICE_HOST=ls-solr
+      - MONGO_SERVICE_HOST=ls-mongo
+    links:
+      - mongo
+      - solr
+    depends_on:
+      - mongo
+      - solr   
+
+  auth-app:
+    build: authserver/.
+    #working_dir: /
+    labels:
+      NAME: "authserver"
+    hostname: "ls-authserver"
+    # container_name: "ls-authserver"
+    image: ls-auth-server-app:1.0
+    entrypoint: /wait-for-it.sh ls-mongo:27017 -t 120 --
+    command: npm run server
+    # ports:
+    #   - "9000:9000"
+    networks:
+      - ecom-net
+    volumes: 
+      - ./authserver/src:/usr/src/app/src
+    environment:
+      - MONGO_SERVICE_HOST=ls-mongo
+  
+  acc-app:
+    build: accserver/.
+    #working_dir: /
+    labels:
+      NAME: "accserver"
+    hostname: "ls-accserver"
+    # container_name: "ls-accserver"
+    image: ls-acc-server-app:1.0
+    entrypoint: /wait-for-it.sh ls-mongo:27017 -t 120 --
+    command: npm run server
+    # ports:
+    #   - "7000:7000"
+    networks:
+      - ecom-net
+    volumes: 
+      - ./accserver/src:/usr/src/app/src
+    environment:
+      - MONGO_SERVICE_HOST=ls-mongo
+      - AUTH_SERVICE_HOST=ls-authserver
+
+  checkout-app:
+    build: checkoutserver/.
+    #working_dir: /
+    labels:
+      NAME: "checkoutserver"
+    hostname: "ls-checkoutserver"
+    # container_name: "ls-checkoutserver"
+    image: ls-checkoutserver-server-app:1.0
+    entrypoint: /wait-for-it.sh ls-mongo:27017 -t 120 --
+    command: npm run server
+    # ports:
+    #   - "8000:8000"
+    networks:
+      - ecom-net
+    volumes: 
+      - ./checkoutserver/src:/usr/src/app/src
+    environment:
+      - MONGO_SERVICE_HOST=ls-mongo
+      - CATALOG_SERVICE_HOST=ls-node
+      - NOTIFICATION_HOST=ls-notificationserver
+
+  frontend-app:
+    build: client/.
+    labels:
+      NAME: "react"
+    hostname: "ls-react"
+    # container_name: "ls-react"
+    image: ls-react-server-app:1.0
+    # ports:
+    #   - "3000:3000"
+    networks:
+      - ecom-net
+    volumes: 
+      - ./client/src:/usr/src/app/src
+      - ./client/public:/usr/src/app/public
+    links:
+      - mongo
+      - solr
+    depends_on:
+      - mongo
+      - solr
+
+  lb-app:
+    build: nginx/.
+    labels:
+      NAME: "nginx"
+    hostname: "ls-nginx"
+    # container_name: "ls-nginx"
+    image: ls-nginx-app:1.0
+    ports:
+      - "70:80"
+    networks:
+      - ecom-net
+    volumes: 
+      - ./data/nginxPublic:/usr/share/nginx/
+      - nginxlogs:/var/log/nginx_export
+    links:
+      - web-app
+      - frontend-app
+    depends_on:
+      - web-app
+      - frontend-app
+  
+  # telegraf:
+  #   image: telegraf
+  #   hostname: "ls-telegraf"
+  #   ports:
+  #     - 8086:8086
+  #   volumes:
+  #     - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+  #     - nginxlogs:/var/log/nginx/:ro
+  #   networks:
+  #     - ecom-net
+    
+  # nginx-prometheus-exporter:
+  #   image: ndiazg/nginx-prometheus-exporter
+  #   hostname: "ls-nginx-export"
+  #   ports: 
+  #     - 3093:3093
+  #   volumes:
+  #     - nginxlogs:/var/log/nginx:ro
+  #   command: /usr/local/bin/mtail -v=2 -logtostderr -port 3093 -progs /mtail/progs -logs /var/log/nginx/access.log
+  #   networks:
+  #     - ecom-net
+
+  # dataloader-app:
+  #   build: dataload/.
+  #   labels:
+  #     NAME: "dataload"
+  #   hostname: "dataload"
+  #   container_name: dataload
+  #   image: dataload-app:1.0
+  #   environment:
+  #     - SOLR_SERVICE_HOST=solr
+  #     - MONGO_SERVICE_HOST=mongo
+#docker run -it --rm --network ecom-net --name mongo-express -p 8081:8081 -e ME_CONFIG_MONGODB_SERVER="ls-mongo" -e ME_CONFIG_BASICAUTH_USERNAME="root" -e ME_CONFIG_BASICAUTH_PASSWORD="example" -e ME_CONFIG_MONGODB_ADMINUSERNAME="root" -e ME_CONFIG_MONGODB_ADMINPASSWORD="example" -e ME_CONFIG_MONGODB_PORT=27017 mongo-express
+  # mongo-express :
+  #   image : mongo-express
+  #   ports :
+  #     - "8081:8081"
+  #   environment :
+  #     - ME_CONFIG_BASICAUTH_USERNAME=root
+  #     - ME_CONFIG_BASICAUTH_PASSWORD=example
+  #     - ME_CONFIG_MONGODB_PORT=27017
+  #     - ME_CONFIG_MONGODB_ADMINUSERNAME=root
+  #     - ME_CONFIG_MONGODB_ADMINPASSWORD=example
+  #     - ME_CONFIG_MONGODB_SERVER=mongo
+  #   links :
+  #     - mongo
+  #   depends_on: 
+  #     - mongo
+
+  # redis:
+  #   image: redis:6.0-alpine
+  #   container_name: redis
+  #   ports:
+  #     - "6379:6379"
+
+  admin-frontend-app:
+    build: adminfe/.
+    labels:
+      NAME: "adminfe"
+    hostname: "ls-adminfe"
+    # container_name: "ls-adminfe"
+    image: ls-adminfe-server-app:1.0
+    # ports:
+      # - "8080:3000"
+    networks:
+      - ecom-net
+    volumes: 
+      - ./adminfe/src:/usr/src/app/src
+      - ./adminfe/public:/usr/src/app/public
+    environment:
+      - CI=true
+      - PUBLIC_URL=admin
+    links:
+      - mongo
+    depends_on:
+      - mongo
+
+  admin-app:
+    build: adminserver/.
+    #working_dir: /
+    labels:
+      NAME: "adminserver"
+    hostname: "ls-adminserver"
+    # container_name: "ls-adminserver"
+    image: ls-admin-server-app:1.0
+    entrypoint: /wait-for-it.sh ls-mongo:27017 -t 120 --
+    command: npm run server
+    # ports:
+    #   - "6000:6000"
+    networks:
+      - ecom-net
+    volumes: 
+      - ./adminserver/src:/usr/src/app/src
+      - ./data/nginxPublic:/usr/src/app/public
+    environment:
+      - MONGO_SERVICE_HOST=ls-mongo
+      - CHECKOUT_SERVICE_HOST=ls-checkoutserver
+      - CATALOG_SERVICE_HOST=ls-node
+
+  # notification-app:
+  #   build: notificationserver/.
+  #   #working_dir: /
+  #   labels:
+  #     NAME: "notificationserver"
+  #   hostname: "notificationserver"
+  #   container_name: "ls-notificationserver"
+  #   image: ls-notification-server-app:1.0
+  #   command: npm run server
+  #   #ports:
+  #   #  - "8082:8082"
+  #   networks:
+  #     - ecom-net
+  #   volumes: 
+  #     - ./notificationserver/src:/usr/src/app/src:z
+  #   environment:
+  #     - NODE_TLS_REJECT_UNAUTHORIZED=0
+  #     - SITEHOST=https://localshop.duckdns.org/
+  #     - SMTP_TRANSPORT_HOST=
+  #     - SMTP_TRANSPORT_PORT=
+  #     - MAIL_USER=
+  #     - MAIL_PASSWORD=
+  #     - MAIL_FROM=
+  #     - SMS_KEY=
+
+  # filebeat:
+  #   build:
+  #     context: ./monitor/elk_monitor/filebeat
+  #   volumes:
+  #     # - log-data:/var/log/server
+  #     - /var/lib/docker/:/var/lib/docker/:ro
+  #   command: filebeat -e -strict.perms=false
+  #   networks:
+  #     - elk
+
+volumes:
+  nginxlogs:
+
+networks:
+  ecom-net:
+    name: ecom-net
+  elk:
+    external: true

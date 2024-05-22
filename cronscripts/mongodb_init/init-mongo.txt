@@ -1,0 +1,61 @@
+try {
+    print('Start #################################################################');
+    db = db.getSiblingDB('ecomcatalog');
+    db.createUser(
+        {
+        user: $MONGO_INITDB_ROOT_USERNAME,
+        pwd: $MONGO_INITDB_ROOT_PASSWORD,
+        roles: [ "readWrite", "dbAdmin" ]
+        }
+    );
+    db.createCollection('delete_me');
+    db.delete_me.insert({name:"Dummy Data"});
+
+    db = db.getSiblingDB('ecomaccount');
+    db.createUser(
+        {
+        user: $MONGO_INITDB_ROOT_USERNAME,
+        pwd: $MONGO_INITDB_ROOT_PASSWORD,
+        roles: [ "readWrite", "dbAdmin" ]
+        }
+    );
+    db.createCollection('delete_me');
+    db.delete_me.insert({name:"Dummy Data"});
+
+    db = db.getSiblingDB('ecomadmin');    
+    db.createUser(
+        {
+            user: $MONGO_INITDB_ROOT_USERNAME,
+            pwd: $MONGO_INITDB_ROOT_PASSWORD,
+            roles: [ "readWrite", "dbAdmin" ]
+        }
+    );
+    db.createCollection('delete_me');
+    db.delete_me.insert({name:"Dummy Data"});
+
+    db = db.getSiblingDB('ecomauth');
+    db.createUser(
+        {
+            user: $MONGO_INITDB_ROOT_USERNAME,
+            pwd: $MONGO_INITDB_ROOT_PASSWORD,
+            roles: [ "readWrite", "dbAdmin" ]
+        }
+    );
+    db.createCollection('delete_me');
+    db.delete_me.insert({name:"Dummy Data"});
+
+    db = db.getSiblingDB('ecomorder');
+    db.createUser(
+        {
+            user: $MONGO_INITDB_ROOT_USERNAME,
+            pwd: $MONGO_INITDB_ROOT_PASSWORD,
+            roles: [ "readWrite", "dbAdmin" ]
+        }
+    );
+    db.createCollection('delete_me');
+    db.delete_me.insert({name:"Dummy Data"});
+    
+    print('END #################################################################');
+} catch (error) {
+    print(`Failed to create developer db user:\n${error}`);
+}

@@ -1,0 +1,65 @@
+version: '3'
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.30.3
+    hostname: prometheus
+    ports:
+      - 9000:9090
+    networks:
+      - default
+      - ecom-net
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prometheus-data:/prometheus
+    command: --web.enable-lifecycle  --config.file=/etc/prometheus/prometheus.yml
+    
+  grafana:
+    image: grafana/grafana:8.2.2
+    hostname: grafana
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+    volumes:
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - grafana-data:/var/lib/grafana
+
+  alertmanager:
+    image: prom/alertmanager:v0.23.0
+    hostname: alertmanager
+    restart: unless-stopped
+    ports:
+      - "9093:9093"
+    volumes:
+      - "./alertmanager:/config"
+      - alertmanager-data:/data
+    command: --config.file=/config/alertmanager.yml --log.level=debug 
+
+  # prom2teams:
+  #   image: idealista/prom2teams:3.2.3
+  #   restart: unless-stopped
+  #   environment:
+  #     PROM2TEAMS_CONNECTOR: "https://og2gether.webhook.office.com/webhookb2/b5370781-89c2-45ba-be14-453e29dfb0a9@8794e153-c3bd-4479-8bea-61aeaf167d5a/IncomingWebhook/57e69e8f10dd49ce8dae3b816159e228/4eb361c9-e566-4b66-ab30-bed630f495a5"
+  #   ports:
+  #     - 8089:8089
+  
+  # nginx-exporter:
+  #   image: nginx/nginx-prometheus-exporter:0.8.0
+  #   restart: unless-stopped
+  #   command:
+  #     - -nginx.scrape-uri
+  #     - http://127.0.0.1:8080/metric
+
+
+volumes:
+  prometheus-data:
+
+  grafana-data:
+
+  alertmanager-data:
+
+networks:
+  default: # this network (app1)
+      driver: bridge
+  ecom-net:
+    external: true

@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: ecom
+  name: ecom-acc
+  labels:
+    app: ecom-acc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: accpod
+  template:
+    metadata:
+      labels:
+        app: accpod
+    spec:
+      containers:
+        - name: acccontainer
+          image: acc-server-app:1.0
+          ports:
+            - containerPort: 7000
+          # env:
+          #   - name: SOLR_SERVICE_HOST
+          #     value: solr
+          #   - name: MONGO_SERVICE_HOST
+          #     value: mongo
+          imagePullPolicy: Never
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: ecom
+  name: accserver
+spec:
+  ports:
+  - port: 7000
+    targetPort: 7000
+  selector:
+    app: accpod
+

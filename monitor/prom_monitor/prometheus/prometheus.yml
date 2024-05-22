@@ -1,0 +1,37 @@
+global:
+  scrape_interval: 30s
+  scrape_timeout: 10s
+
+# rule_files:
+#   - alert.yml
+
+# alerting:
+#   alertmanagers:
+#     - scheme: http
+#       static_configs:
+#         - targets: [ 'alertmanager:9093' ]
+
+scrape_configs:
+  # - job_name: services
+  #   metrics_path: /metrics
+  #   static_configs:
+  #     - targets:
+  #         - 'prometheus:9090'
+  #         - 'idonotexists:564'
+  - job_name: nginx
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - 'ls-telegraf:9125'
+
+  - job_name: browse-server
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - 'ls-node:5000'
+          - 'ls-authserver:9000'
+          - 'ls-accserver:7000'
+          - 'ls-checkoutserver:8000'
+          - 'ls-adminserver:6000'
+  
+
